@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital City Quiz</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a1a;display:flex;justify-content:center;padding:2rem 1rem}
+#app{width:100%;max-width:520px}
+#game{display:flex;flex-direction:column;align-items:center;padding:0.75rem 0;min-height:520px}
+#score-bar{display:flex;gap:16px;align-items:center;font-size:13px;color:#666;margin-bottom:0.5rem}
+#score-num{font-size:20px;font-weight:500;color:#1a1a1a}
+#turn-dots{display:flex;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ddd;transition:background 0.3s}
+.dot.done-correct{background:#3a8c5a}.dot.done-wrong{background:#c44}.dot.active{background:#ffd700}
+#globe-wrap{position:relative;width:220px;height:220px;margin:0.25rem auto}
+#globe-canvas{border-radius:50%;display:block}
+#question-area{text-align:center;margin:0.4rem 0 0.6rem;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:4px}
+#country-label{font-size:22px;font-weight:500;min-height:30px}
+#points-badge{font-size:12px;padding:3px 10px;border-radius:20px;background:#f0f0ea;color:#666;border:0.5px solid #ddd;display:none}
+#question-text{font-size:14px;color:#666}
+#options{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:460px;margin:0 auto}
+.opt-btn{padding:11px 14px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;text-align:left;transition:background 0.15s;font-family:inherit}
+.opt-btn:hover:not(:disabled){background:#f5f5f0}
+.opt-btn.correct{background:#1a5c2a;color:#a8e6b8;border-color:#2d8a45}
+.opt-btn.wrong{background:#5c1a1a;color:#e6a8a8;border-color:#8a2d2d}
+.opt-btn:disabled{cursor:default}
+#result-msg{font-size:14px;min-height:20px;font-weight:500;color:#666;margin-top:4px}
+#action-btn{margin-top:0.6rem;padding:10px 28px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;font-family:inherit}
+#action-btn:hover{background:#f5f5f0}
+#end-screen{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:0.5rem 0;width:100%;max-width:460px}
+#final-score-big{font-size:56px;font-weight:500;line-height:1}
+#end-breakdown{width:100%;border-collapse:collapse;font-size:13px}
+#end-breakdown th{text-align:left;padding:5px 8px;border-bottom:0.5px solid #ddd;color:#666;font-weight:400}
+#end-breakdown td{padding:5px 8px;border-bottom:0.5px solid #ddd}
+.r-correct{color:#3a8c5a}.r-wrong{color:#c44}
+#play-again{padding:10px 28px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;margin-top:6px;font-family:inherit}
+#play-again:hover{background:#f5f5f0}
+h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a1a1a}
+@media(prefers-color-scheme:dark){
+  body{background:#1a1a1a;color:#eee}
+  #score-num,#country-label{color:#eee}
+  #score-bar,#question-text,#result-msg{color:#aaa}
+  #points-badge{background:#2a2a2a;color:#aaa;border-color:#444}
+  .opt-btn{background:#2a2a2a;color:#eee;border-color:#444}
+  .opt-btn:hover:not(:disabled){background:#333}
+  #action-btn,#play-again{background:#2a2a2a;color:#eee;border-color:#444}
+  #action-btn:hover,#play-again:hover{background:#333}
+  .dot{background:#444}
+  #end-breakdown th{border-color:#444;color:#aaa}
+  #end-breakdown td{border-color:#444}
+  h1{color:#eee}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<h1>Capital City Quiz</h1>
+<div id="game">
+  <div id="score-bar">
+    <div>Score: <span id="score-num">0</span></div>
+    <div id="turn-dots"></div>
+    <div>Turn <span id="turn-num">0</span>/10</div>
+  </div>
+  <div id="globe-wrap">
+    <canvas id="globe-canvas" width="220" height="220"></canvas>
+  </div>
+  <div id="question-area">
+    <div id="country-label"></div>
+    <div id="points-badge"></div>
+    <div id="question-text"></div>
+  </div>
+  <div id="options"></div>
+  <div id="result-msg"></div>
+  <button id="action-btn">Spin the Globe</button>
+  <div id="end-screen">
+    <div style="font-size:14px;color:#666">Game over! Final score:</div>
+    <div id="final-score-big">0</div>
+    <table id="end-breakdown">
+      <thead><tr><th>Place</th><th>Capital</th><th>Points</th><th></th></tr></thead>
+      <tbody id="breakdown-body"></tbody>
+    </table>
+    <button id="play-again">Play again</button>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+
+const W=220,H=220;
+const canvas=document.getElementById('globe-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setClearColor(0x000000,0);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,W/H,0.1,100);
+camera.position.z=2.8;
+
+const texCanvas=document.createElement('canvas');
+texCanvas.width=1024;texCanvas.height=512;
+const tc=texCanvas.getContext('2d');
+
+function drawEarthTex(){
+  tc.fillStyle='#1a6fa8';tc.fillRect(0,0,1024,512);
+  tc.fillStyle='#2a7fbf';
+  for(let i=0;i<60;i++){
+    const x=Math.random()*1024,y=Math.random()*512,r=Math.random()*30+5;
+    tc.beginPath();tc.arc(x,y,r,0,Math.PI*2);tc.fill();
+  }
+  const lands=[
+    {pts:[[130,80],[220,60],[260,80],[280,130],[260,170],[230,200],[200,220],[170,200],[150,180],[130,150],[110,130],[100,100]]},
+    {pts:[[190,230],[220,220],[240,240],[250,280],[240,330],[220,370],[200,390],[180,380],[170,350],[160,300],[170,260],[180,240]]},
+    {pts:[[460,60],[510,55],[540,65],[555,80],[545,100],[530,110],[510,115],[490,110],[470,105],[455,90],[455,75]]},
+    {pts:[[480,130],[530,120],[560,130],[575,160],[580,210],[570,270],[550,320],[520,350],[490,355],[465,340],[450,300],[445,250],[450,190],[460,160]]},
+    {pts:[[540,60],[620,50],[700,55],[760,65],[790,85],[800,120],[790,155],[760,170],[720,175],[680,165],[640,155],[600,150],[570,140],[555,120],[545,100],[540,75]]},
+    {pts:[[600,155],[630,160],[650,180],[645,210],[630,230],[610,235],[595,220],[588,195],[592,170]]},
+    {pts:[[700,170],[730,160],[760,170],[775,195],[765,215],[740,220],[715,215],[700,195]]},
+    {pts:[[720,290],[780,275],[820,285],[840,310],[835,350],[810,375],[770,385],[735,370],[710,345],[705,315]]},
+    {pts:[[770,100],[780,95],[790,105],[782,120],[770,115]]},
+    {pts:[[460,65],[468,60],[475,65],[472,78],[463,75]]},
+    {pts:[[470,45],[510,40],[525,55],[510,70],[490,72],[470,60]]},
+    {pts:[[230,25],[280,20],[300,35],[295,60],[270,70],[245,65],[225,50]]},
+    {pts:[[415,52],[435,48],[440,58],[428,65],[415,60]]},
+    {pts:[[565,310],[572,300],[578,315],[575,335],[565,340],[558,325]]},
+    {pts:[[840,380],[848,370],[855,380],[850,395],[840,395]]},
+    {pts:[[540,200],[560,190],[575,200],[572,215],[555,220],[540,210]]},
+    {pts:[[740,195],[750,188],[758,198],[750,210],[740,206]]},
+    {pts:[[720,215],[745,208],[758,220],[752,238],[730,240],[715,230]]},
+    {pts:[[685,215],[710,205],[720,218],[710,235],[688,232]]},
+  ];
+  const landColors=['#2d8a4e','#3a9a5a','#268a48','#329050','#3aa055','#2e8848'];
+  lands.forEach((land,i)=>{
+    const col=landColors[i%landColors.length];
+    tc.fillStyle=col;
+    tc.beginPath();tc.moveTo(land.pts[0][0],land.pts[0][1]);
+    for(let j=1;j<land.pts.length;j++)tc.lineTo(land.pts[j][0],land.pts[j][1]);
+    tc.closePath();tc.fill();
+    tc.fillStyle='rgba(0,0,0,0.08)';
+    tc.beginPath();tc.moveTo(land.pts[0][0]+2,land.pts[0][1]+2);
+    for(let j=1;j<land.pts.length;j++)tc.lineTo(land.pts[j][0]+2,land.pts[j][1]+2);
+    tc.closePath();tc.fill();
+    tc.fillStyle=col;
+    tc.beginPath();tc.moveTo(land.pts[0][0],land.pts[0][1]);
+    for(let j=1;j<land.pts.length;j++)tc.lineTo(land.pts[j][0],land.pts[j][1]);
+    tc.closePath();tc.fill();
+    tc.fillStyle='rgba(80,160,80,0.25)';
+    tc.beginPath();tc.moveTo(land.pts[0][0],land.pts[0][1]);
+    for(let j=1;j<land.pts.length;j++)tc.lineTo(land.pts[j][0],land.pts[j][1]);
+    tc.closePath();tc.fill();
+  });
+  tc.fillStyle='rgba(255,255,255,0.55)';tc.fillRect(0,0,1024,18);
+  tc.fillStyle='rgba(255,255,255,0.55)';tc.fillRect(0,494,1024,18);
+  tc.strokeStyle='rgba(255,255,255,0.08)';tc.lineWidth=1;
+  for(let lat=-75;lat<=75;lat+=15){
+    const y=(lat+90)/180*512;
+    tc.beginPath();tc.moveTo(0,y);tc.lineTo(1024,y);tc.stroke();
+  }
+  for(let lon=0;lon<360;lon+=30){
+    const x=lon/360*1024;
+    tc.beginPath();tc.moveTo(x,0);tc.lineTo(x,512);tc.stroke();
+  }
+}
+drawEarthTex();
+
+const tex=new THREE.CanvasTexture(texCanvas);
+const geo=new THREE.SphereGeometry(1,64,64);
+const mat=new THREE.MeshPhongMaterial({
+  map:tex,specular:new THREE.Color(0x224488),shininess:18,
+  emissive:new THREE.Color(0x001133),emissiveIntensity:0.15
+});
+const globe=new THREE.Mesh(geo,mat);
+scene.add(globe);
+
+const atmoGeo=new THREE.SphereGeometry(1.04,32,32);
+const atmoMat=new THREE.MeshPhongMaterial({color:0x4488ff,transparent:true,opacity:0.06,side:THREE.FrontSide});
+scene.add(new THREE.Mesh(atmoGeo,atmoMat));
+
+const ambient=new THREE.AmbientLight(0x334466,0.7);scene.add(ambient);
+const sun=new THREE.DirectionalLight(0xffffff,1.1);sun.position.set(5,3,5);scene.add(sun);
+const fill=new THREE.DirectionalLight(0x223355,0.3);fill.position.set(-3,-1,-3);scene.add(fill);
+
+let spinSpeed=0,spinning=false,spinDone=null;
+
+function animate(){
+  requestAnimationFrame(animate);
+  globe.rotation.y+=spinSpeed;
+  if(spinning){
+    spinSpeed*=0.985;
+    if(spinSpeed<0.003){spinSpeed=0;spinning=false;if(spinDone){const cb=spinDone;spinDone=null;cb();}}
+  }
+  renderer.render(scene,camera);
+}
+animate();
+
+function doSpin(cb){
+  spinSpeed=0.14+Math.random()*0.06;spinning=true;spinDone=null;
+  setTimeout(()=>{spinning=true;spinDone=cb;},1800);
+}
+
+const DATA={
+  countries:[
+["Afghanistan","Kabul",3,"country"],["Albania","Tirana",4,"country"],["Algeria","Algiers",5,"country"],["Andorra","Andorra la Vella",2,"country"],["Angola","Luanda",3,"country"],["Argentina","Buenos Aires",8,"country"],["Armenia","Yerevan",3,"country"],["Australia","Canberra",9,"country"],["Austria","Vienna",8,"country"],["Azerbaijan","Baku",3,"country"],["Bahamas","Nassau",3,"country"],["Bahrain","Manama",3,"country"],["Bangladesh","Dhaka",5,"country"],["Belarus","Minsk",4,"country"],["Belgium","Brussels",8,"country"],["Belize","Belmopan",2,"country"],["Benin","Porto-Novo",2,"country"],["Bhutan","Thimphu",2,"country"],["Bolivia","Sucre",4,"country"],["Bosnia and Herzegovina","Sarajevo",3,"country"],["Botswana","Gaborone",2,"country"],["Brazil","Brasília",9,"country"],["Brunei","Bandar Seri Begawan",2,"country"],["Bulgaria","Sofia",5,"country"],["Burkina Faso","Ouagadougou",2,"country"],["Burundi","Gitega",1,"country"],["Cambodia","Phnom Penh",3,"country"],["Cameroon","Yaoundé",3,"country"],["Canada","Ottawa",9,"country"],["Cape Verde","Praia",1,"country"],["Central African Republic","Bangui",1,"country"],["Chad","N'Djamena",1,"country"],["Chile","Santiago",7,"country"],["China","Beijing",10,"country"],["Colombia","Bogotá",7,"country"],["Comoros","Moroni",1,"country"],["Congo","Brazzaville",2,"country"],["Costa Rica","San José",5,"country"],["Croatia","Zagreb",5,"country"],["Cuba","Havana",7,"country"],["Cyprus","Nicosia",4,"country"],["Czech Republic","Prague",7,"country"],["Denmark","Copenhagen",8,"country"],["Djibouti","Djibouti",1,"country"],["Dominican Republic","Santo Domingo",5,"country"],["DR Congo","Kinshasa",3,"country"],["Ecuador","Quito",6,"country"],["Egypt","Cairo",8,"country"],["El Salvador","San Salvador",4,"country"],["Equatorial Guinea","Malabo",1,"country"],["Eritrea","Asmara",1,"country"],["Estonia","Tallinn",4,"country"],["Eswatini","Mbabane",1,"country"],["Ethiopia","Addis Ababa",4,"country"],["Fiji","Suva",2,"country"],["Finland","Helsinki",7,"country"],["France","Paris",10,"country"],["Gabon","Libreville",1,"country"],["Gambia","Banjul",1,"country"],["Georgia","Tbilisi",3,"country"],["Germany","Berlin",10,"country"],["Ghana","Accra",4,"country"],["Greece","Athens",8,"country"],["Guatemala","Guatemala City",5,"country"],["Guinea","Conakry",2,"country"],["Guinea-Bissau","Bissau",1,"country"],["Guyana","Georgetown",1,"country"],["Haiti","Port-au-Prince",4,"country"],["Honduras","Tegucigalpa",3,"country"],["Hungary","Budapest",7,"country"],["Iceland","Reykjavik",6,"country"],["India","New Delhi",10,"country"],["Indonesia","Jakarta",8,"country"],["Iran","Tehran",7,"country"],["Iraq","Baghdad",7,"country"],["Ireland","Dublin",8,"country"],["Israel","Jerusalem",8,"country"],["Italy","Rome",10,"country"],["Jamaica","Kingston",6,"country"],["Japan","Tokyo",10,"country"],["Jordan","Amman",5,"country"],["Kazakhstan","Astana",4,"country"],["Kenya","Nairobi",5,"country"],["Kiribati","South Tarawa",1,"country"],["Kuwait","Kuwait City",4,"country"],["Kyrgyzstan","Bishkek",2,"country"],["Laos","Vientiane",2,"country"],["Latvia","Riga",4,"country"],["Lebanon","Beirut",6,"country"],["Lesotho","Maseru",1,"country"],["Liberia","Monrovia",2,"country"],["Libya","Tripoli",4,"country"],["Liechtenstein","Vaduz",3,"country"],["Lithuania","Vilnius",4,"country"],["Luxembourg","Luxembourg City",5,"country"],["Madagascar","Antananarivo",3,"country"],["Malawi","Lilongwe",2,"country"],["Malaysia","Kuala Lumpur",7,"country"],["Maldives","Malé",3,"country"],["Mali","Bamako",2,"country"],["Malta","Valletta",4,"country"],["Marshall Islands","Majuro",1,"country"],["Mauritania","Nouakchott",1,"country"],["Mauritius","Port Louis",2,"country"],["Mexico","Mexico City",9,"country"],["Micronesia","Palikir",1,"country"],["Moldova","Chișinău",2,"country"],["Monaco","Monaco",4,"country"],["Mongolia","Ulaanbaatar",3,"country"],["Montenegro","Podgorica",2,"country"],["Morocco","Rabat",6,"country"],["Mozambique","Maputo",2,"country"],["Myanmar","Naypyidaw",3,"country"],["Namibia","Windhoek",2,"country"],["Nauru","Yaren",1,"country"],["Nepal","Kathmandu",5,"country"],["Netherlands","Amsterdam",9,"country"],["New Zealand","Wellington",7,"country"],["Nicaragua","Managua",3,"country"],["Niger","Niamey",2,"country"],["Nigeria","Abuja",6,"country"],["North Korea","Pyongyang",6,"country"],["North Macedonia","Skopje",2,"country"],["Norway","Oslo",8,"country"],["Oman","Muscat",3,"country"],["Pakistan","Islamabad",7,"country"],["Palau","Ngerulmud",1,"country"],["Palestine","Ramallah",4,"country"],["Panama","Panama City",5,"country"],["Papua New Guinea","Port Moresby",2,"country"],["Paraguay","Asunción",3,"country"],["Peru","Lima",7,"country"],["Philippines","Manila",7,"country"],["Poland","Warsaw",8,"country"],["Portugal","Lisbon",8,"country"],["Qatar","Doha",5,"country"],["Romania","Bucharest",6,"country"],["Russia","Moscow",10,"country"],["Rwanda","Kigali",3,"country"],["Samoa","Apia",1,"country"],["San Marino","San Marino",3,"country"],["Saudi Arabia","Riyadh",7,"country"],["Senegal","Dakar",3,"country"],["Serbia","Belgrade",5,"country"],["Sierra Leone","Freetown",2,"country"],["Singapore","Singapore",7,"country"],["Slovakia","Bratislava",5,"country"],["Slovenia","Ljubljana",4,"country"],["Solomon Islands","Honiara",1,"country"],["Somalia","Mogadishu",3,"country"],["South Africa","Pretoria",7,"country"],["South Korea","Seoul",9,"country"],["South Sudan","Juba",2,"country"],["Spain","Madrid",10,"country"],["Sri Lanka","Sri Jayawardenepura Kotte",3,"country"],["Sudan","Khartoum",4,"country"],["Suriname","Paramaribo",2,"country"],["Sweden","Stockholm",8,"country"],["Switzerland","Bern",8,"country"],["Syria","Damascus",6,"country"],["Taiwan","Taipei",6,"country"],["Tajikistan","Dushanbe",2,"country"],["Tanzania","Dodoma",3,"country"],["Thailand","Bangkok",8,"country"],["Timor-Leste","Dili",1,"country"],["Togo","Lomé",1,"country"],["Tonga","Nukuʻalofa",1,"country"],["Trinidad and Tobago","Port of Spain",3,"country"],["Tunisia","Tunis",5,"country"],["Turkey","Ankara",8,"country"],["Turkmenistan","Ashgabat",2,"country"],["Tuvalu","Funafuti",1,"country"],["Uganda","Kampala",3,"country"],["Ukraine","Kyiv",7,"country"],["UAE","Abu Dhabi",7,"country"],["United Kingdom","London",10,"country"],["United States","Washington D.C.",10,"country"],["Uruguay","Montevideo",5,"country"],["Uzbekistan","Tashkent",3,"country"],["Vanuatu","Port Vila",1,"country"],["Vatican City","Vatican City",5,"country"],["Venezuela","Caracas",6,"country"],["Vietnam","Hanoi",7,"country"],["Yemen","Sanaa",4,"country"],["Zambia","Lusaka",2,"country"],["Zimbabwe","Harare",3,"country"]
+  ],
+  states:[
+["Alabama","Montgomery",5,"state"],["Alaska","Juneau",6,"state"],["Arizona","Phoenix",7,"state"],["Arkansas","Little Rock",5,"state"],["California","Sacramento",9,"state"],["Colorado","Denver",8,"state"],["Connecticut","Hartford",6,"state"],["Delaware","Dover",5,"state"],["Florida","Tallahassee",8,"state"],["Georgia","Atlanta",8,"state"],["Hawaii","Honolulu",7,"state"],["Idaho","Boise",6,"state"],["Illinois","Springfield",8,"state"],["Indiana","Indianapolis",7,"state"],["Iowa","Des Moines",6,"state"],["Kansas","Topeka",6,"state"],["Kentucky","Frankfort",6,"state"],["Louisiana","Baton Rouge",7,"state"],["Maine","Augusta",5,"state"],["Maryland","Annapolis",7,"state"],["Massachusetts","Boston",8,"state"],["Michigan","Lansing",7,"state"],["Minnesota","Saint Paul",7,"state"],["Mississippi","Jackson",6,"state"],["Missouri","Jefferson City",7,"state"],["Montana","Helena",5,"state"],["Nebraska","Lincoln",6,"state"],["Nevada","Carson City",7,"state"],["New Hampshire","Concord",5,"state"],["New Jersey","Trenton",7,"state"],["New Mexico","Santa Fe",6,"state"],["New York","Albany",9,"state"],["North Carolina","Raleigh",7,"state"],["North Dakota","Bismarck",5,"state"],["Ohio","Columbus",8,"state"],["Oklahoma","Oklahoma City",6,"state"],["Oregon","Salem",6,"state"],["Pennsylvania","Harrisburg",8,"state"],["Rhode Island","Providence",5,"state"],["South Carolina","Columbia",6,"state"],["South Dakota","Pierre",5,"state"],["Tennessee","Nashville",7,"state"],["Texas","Austin",9,"state"],["Utah","Salt Lake City",7,"state"],["Vermont","Montpelier",5,"state"],["Virginia","Richmond",7,"state"],["Washington","Olympia",7,"state"],["West Virginia","Charleston",5,"state"],["Wisconsin","Madison",7,"state"],["Wyoming","Cheyenne",5,"state"]
+  ]
+};
+
+const ALL=[...DATA.countries,...DATA.states];
+const CAPITALS=ALL.map(x=>x[1]);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function weightedPick(pool,used){
+  const avail=pool.filter(x=>!used.has(x[0]));
+  if(!avail.length)return pool[Math.floor(Math.random()*pool.length)];
+  const tw=avail.reduce((s,x)=>s+x[2],0);let r=Math.random()*tw;
+  for(const item of avail){r-=item[2];if(r<=0)return item;}
+  return avail[avail.length-1];
+}
+function calcPoints(w){return Math.round(5+(10-w)*5)}
+function getWrongOptions(correct,type){
+  let pool;
+  if(type==='state')pool=DATA.states.map(x=>x[1]).filter(c=>c!==correct);
+  else pool=DATA.countries.map(x=>x[1]).filter(c=>c!==correct);
+  shuffle(pool);
+  const extra=CAPITALS.filter(c=>c!==correct&&!pool.includes(c));shuffle(extra);
+  return shuffle([...pool.slice(0,8),...extra.slice(0,4)]).slice(0,3);
+}
+
+let score=0,turn=0,history=[],usedNames=new Set(),currentItem=null,answering=false;
+const scoreNumEl=document.getElementById('score-num');
+const turnNumEl=document.getElementById('turn-num');
+const turnDotsEl=document.getElementById('turn-dots');
+const countryLabelEl=document.getElementById('country-label');
+const pointsBadgeEl=document.getElementById('points-badge');
+const questionTextEl=document.getElementById('question-text');
+const optionsDiv=document.getElementById('options');
+const resultMsgEl=document.getElementById('result-msg');
+const actionBtn=document.getElementById('action-btn');
+const endScreen=document.getElementById('end-screen');
+
+function initDots(){
+  turnDotsEl.innerHTML='';
+  for(let i=0;i<10;i++){const d=document.createElement('div');d.className='dot';d.id='dot'+i;turnDotsEl.appendChild(d);}
+}
+initDots();
+function setDot(i,st){const d=document.getElementById('dot'+i);if(d)d.className='dot '+st;}
+
+function showQuestion(item){
+  currentItem=item;
+  const pts=calcPoints(item[2]);
+  countryLabelEl.textContent=item[0];
+  pointsBadgeEl.style.display='inline-block';
+  pointsBadgeEl.textContent=pts+' pts if correct';
+  questionTextEl.textContent='What is the capital '+(item[3]==='state'?'of the US state of':'city of')+' '+item[0]+'?';
+  const wrongs=getWrongOptions(item[1],item[3]);
+  const opts=shuffle([item[1],...wrongs]);
+  optionsDiv.innerHTML='';
+  opts.forEach(o=>{
+    const btn=document.createElement('button');btn.className='opt-btn';btn.textContent=o;
+    btn.onclick=()=>answer(o,item[1],pts,btn);
+    optionsDiv.appendChild(btn);
+  });
+  resultMsgEl.textContent='';answering=true;actionBtn.style.display='none';
+}
+
+function answer(chosen,correct,pts,btn){
+  if(!answering)return;answering=false;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===correct)b.className='opt-btn correct';
+    else if(b===btn)b.className='opt-btn wrong';
+  });
+  const ok=(chosen===correct);
+  if(ok){score+=pts;scoreNumEl.textContent=score;resultMsgEl.style.color='#3a8c5a';resultMsgEl.textContent='Correct! +'+pts+' points';}
+  else{resultMsgEl.style.color='#c44';resultMsgEl.textContent='Wrong. The answer was '+correct+'.';}
+  history.push({name:currentItem[0],capital:correct,pts:ok?pts:0,maxPts:pts,correct:ok});
+  setDot(turn-1,ok?'done-correct':'done-wrong');
+  actionBtn.textContent=turn>=10?'See Results':'Next Spin';
+  actionBtn.style.display='inline-block';
+}
+
+function startTurn(){
+  if(turn>=10){endGame();return;}
+  turn++;turnNumEl.textContent=turn;setDot(turn-1,'active');
+  actionBtn.style.display='none';
+  countryLabelEl.textContent='';pointsBadgeEl.style.display='none';
+  questionTextEl.textContent='Spinning...';optionsDiv.innerHTML='';resultMsgEl.textContent='';
+  const combined=[...DATA.countries,...DATA.states];
+  const item=weightedPick(combined,usedNames);usedNames.add(item[0]);
+  doSpin(()=>showQuestion(item));
+}
+
+function endGame(){
+  endScreen.style.display='flex';
+  document.getElementById('final-score-big').textContent=score;
+  const tbody=document.getElementById('breakdown-body');tbody.innerHTML='';
+  history.forEach(h=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+h.name+'</td><td>'+h.capital+'</td><td>'+h.maxPts+'</td><td class="'+(h.correct?'r-correct':'r-wrong')+'">'+(h.correct?'+'+h.pts:'✗')+'</td>';
+    tbody.appendChild(tr);
+  });
+  document.querySelectorAll('#globe-wrap,#question-area,#options,#result-msg,#action-btn,#score-bar').forEach(el=>el.style.display='none');
+}
+
+function resetGame(){
+  score=0;turn=0;history=[];usedNames=new Set();currentItem=null;answering=false;
+  scoreNumEl.textContent='0';turnNumEl.textContent='0';initDots();
+  endScreen.style.display='none';
+  document.querySelectorAll('#globe-wrap,#question-area,#options,#result-msg,#action-btn,#score-bar').forEach(el=>el.style.display='');
+  optionsDiv.innerHTML='';resultMsgEl.textContent='';countryLabelEl.textContent='';
+  questionTextEl.textContent='';pointsBadgeEl.style.display='none';
+  actionBtn.textContent='Spin the Globe';actionBtn.style.display='inline-block';
+}
+
+actionBtn.onclick=()=>{if(turn===0||turn<10)startTurn();else endGame();};
+document.getElementById('play-again').onclick=resetGame;
+
+})();
+</script>
+</body>
+</html>
