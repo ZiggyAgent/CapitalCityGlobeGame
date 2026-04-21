@@ -8,6 +8,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a1a;display:flex;justify-content:center;padding:2rem 1rem}
 #app{width:100%;max-width:520px}
+h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a1a1a}
 #game{display:flex;flex-direction:column;align-items:center;padding:0.75rem 0;min-height:520px}
 #score-bar{display:flex;gap:16px;align-items:center;font-size:13px;color:#666;margin-bottom:0.5rem}
 #score-num{font-size:20px;font-weight:500;color:#1a1a1a}
@@ -29,18 +30,49 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a
 #result-msg{font-size:14px;min-height:20px;font-weight:500;color:#666;margin-top:4px}
 #action-btn{margin-top:0.6rem;padding:10px 28px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;font-family:inherit}
 #action-btn:hover{background:#f5f5f0}
-#end-screen{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:0.5rem 0;width:100%;max-width:460px}
+
+/* End screen */
+#end-screen{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:0.5rem 0;width:100%;max-width:460px}
 #final-score-big{font-size:56px;font-weight:500;line-height:1}
-#end-breakdown{width:100%;border-collapse:collapse;font-size:13px}
+#end-msg{font-size:15px;color:#444;max-width:380px;line-height:1.5;font-style:italic}
+
+/* Name entry */
+#name-entry{display:none;flex-direction:column;align-items:center;gap:10px;width:100%}
+#name-entry p{font-size:14px;color:#444;font-weight:500}
+#name-input{padding:10px 14px;border:0.5px solid #ccc;border-radius:8px;font-size:15px;width:100%;max-width:280px;font-family:inherit;background:#fff;color:#1a1a1a}
+#name-input:focus{outline:none;border-color:#888}
+#submit-score-btn{padding:10px 24px;border:0.5px solid #3a8c5a;border-radius:8px;background:#1a5c2a;color:#a8e6b8;font-size:14px;cursor:pointer;font-weight:500;font-family:inherit}
+#submit-score-btn:hover{background:#2d8a45}
+#skip-btn{font-size:13px;color:#aaa;cursor:pointer;background:none;border:none;font-family:inherit;text-decoration:underline}
+#skip-btn:hover{color:#666}
+
+/* Leaderboard */
+#leaderboard-wrap{width:100%}
+#leaderboard-wrap h3{font-size:15px;font-weight:500;margin-bottom:8px;color:#1a1a1a}
+#leaderboard-table{width:100%;border-collapse:collapse;font-size:13px}
+#leaderboard-table th{text-align:left;padding:5px 8px;border-bottom:0.5px solid #ddd;color:#666;font-weight:400}
+#leaderboard-table td{padding:6px 8px;border-bottom:0.5px solid #eee}
+#leaderboard-table tr.highlight td{background:#fffbe6;font-weight:500}
+.lb-rank{color:#aaa;width:28px}
+.lb-score{font-weight:500;text-align:right}
+#lb-loading{font-size:13px;color:#aaa;text-align:center;padding:12px}
+
+/* Round breakdown */
+#end-breakdown{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
 #end-breakdown th{text-align:left;padding:5px 8px;border-bottom:0.5px solid #ddd;color:#666;font-weight:400}
-#end-breakdown td{padding:5px 8px;border-bottom:0.5px solid #ddd}
+#end-breakdown td{padding:5px 8px;border-bottom:0.5px solid #eee}
 .r-correct{color:#3a8c5a}.r-wrong{color:#c44}
-#play-again{padding:10px 28px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;margin-top:6px;font-family:inherit}
+
+#play-again{padding:10px 28px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;margin-top:4px;font-family:inherit}
 #play-again:hover{background:#f5f5f0}
-h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a1a1a}
+
+details{width:100%;cursor:pointer}
+details summary{font-size:13px;color:#aaa;padding:4px 0;user-select:none}
+details summary:hover{color:#666}
+
 @media(prefers-color-scheme:dark){
   body{background:#1a1a1a;color:#eee}
-  #score-num,#country-label{color:#eee}
+  h1,#score-num,#country-label{color:#eee}
   #score-bar,#question-text,#result-msg{color:#aaa}
   #points-badge{background:#2a2a2a;color:#aaa;border-color:#444}
   .opt-btn{background:#2a2a2a;color:#eee;border-color:#444}
@@ -48,9 +80,14 @@ h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a
   #action-btn,#play-again{background:#2a2a2a;color:#eee;border-color:#444}
   #action-btn:hover,#play-again:hover{background:#333}
   .dot{background:#444}
-  #end-breakdown th{border-color:#444;color:#aaa}
-  #end-breakdown td{border-color:#444}
-  h1{color:#eee}
+  #end-breakdown th,#leaderboard-table th{border-color:#444;color:#aaa}
+  #end-breakdown td,#leaderboard-table td{border-color:#333}
+  #leaderboard-table tr.highlight td{background:#2a2a1a}
+  #end-msg{color:#bbb}
+  #name-entry p{color:#bbb}
+  #name-input{background:#2a2a2a;color:#eee;border-color:#444}
+  details summary{color:#666}
+  details summary:hover{color:#aaa}
 }
 </style>
 </head>
@@ -74,13 +111,36 @@ h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a
   <div id="options"></div>
   <div id="result-msg"></div>
   <button id="action-btn">Spin the Globe</button>
+
   <div id="end-screen">
     <div style="font-size:14px;color:#666">Game over! Final score:</div>
     <div id="final-score-big">0</div>
-    <table id="end-breakdown">
-      <thead><tr><th>Place</th><th>Capital</th><th>Points</th><th></th></tr></thead>
-      <tbody id="breakdown-body"></tbody>
-    </table>
+    <div id="end-msg"></div>
+
+    <div id="name-entry">
+      <p>You made the top 10! Enter your name:</p>
+      <input id="name-input" type="text" maxlength="24" placeholder="Your name" />
+      <button id="submit-score-btn">Submit score</button>
+      <button id="skip-btn">Skip, just show leaderboard</button>
+    </div>
+
+    <div id="leaderboard-wrap">
+      <h3>Top 10 leaderboard</h3>
+      <div id="lb-loading">Loading...</div>
+      <table id="leaderboard-table" style="display:none">
+        <thead><tr><th class="lb-rank">#</th><th>Name</th><th class="lb-score">Score</th></tr></thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+
+    <details>
+      <summary>Round breakdown</summary>
+      <table id="end-breakdown" style="margin-top:8px">
+        <thead><tr><th>Place</th><th>Capital</th><th>Pts</th><th></th></tr></thead>
+        <tbody id="breakdown-body"></tbody>
+      </table>
+    </details>
+
     <button id="play-again">Play again</button>
   </div>
 </div>
@@ -90,12 +150,49 @@ h1{text-align:center;font-size:22px;font-weight:500;margin-bottom:1rem;color:#1a
 <script>
 (function(){
 
+const SUPABASE_URL = 'https://jdmjfwuugddkyzsazwzg.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbWpmd3V1Z2Rka3l6c2F6d3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODA4NTYsImV4cCI6MjA5MjM1Njg1Nn0.G1HPQabERHzyQdvX66_r8Rj71MsflfQavUE76UrBJS4';
+
+async function sbFetch(path, opts={}){
+  const res = await fetch(SUPABASE_URL+'/rest/v1/'+path, {
+    ...opts,
+    headers:{
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer '+SUPABASE_ANON,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer||'',
+      ...opts.headers
+    }
+  });
+  if(!res.ok) throw new Error(await res.text());
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+async function getTopScores(){
+  return sbFetch('scores?select=name,score&order=score.desc&limit=10');
+}
+
+async function getThresholdScore(){
+  const rows = await sbFetch('scores?select=score&order=score.desc&limit=10');
+  if(!rows || rows.length < 10) return 0;
+  return rows[rows.length-1].score;
+}
+
+async function insertScore(name, score){
+  await sbFetch('scores', {
+    method:'POST',
+    prefer:'return=minimal',
+    body: JSON.stringify({name, score})
+  });
+}
+
+// ── 3D Globe ──────────────────────────────────────────────
 const W=220,H=220;
 const canvas=document.getElementById('globe-canvas');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
 renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.setClearColor(0x000000,0);
-
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(45,W/H,0.1,100);
 camera.position.z=2.8;
@@ -155,52 +252,29 @@ function drawEarthTex(){
   tc.fillStyle='rgba(255,255,255,0.55)';tc.fillRect(0,0,1024,18);
   tc.fillStyle='rgba(255,255,255,0.55)';tc.fillRect(0,494,1024,18);
   tc.strokeStyle='rgba(255,255,255,0.08)';tc.lineWidth=1;
-  for(let lat=-75;lat<=75;lat+=15){
-    const y=(lat+90)/180*512;
-    tc.beginPath();tc.moveTo(0,y);tc.lineTo(1024,y);tc.stroke();
-  }
-  for(let lon=0;lon<360;lon+=30){
-    const x=lon/360*1024;
-    tc.beginPath();tc.moveTo(x,0);tc.lineTo(x,512);tc.stroke();
-  }
+  for(let lat=-75;lat<=75;lat+=15){const y=(lat+90)/180*512;tc.beginPath();tc.moveTo(0,y);tc.lineTo(1024,y);tc.stroke();}
+  for(let lon=0;lon<360;lon+=30){const x=lon/360*1024;tc.beginPath();tc.moveTo(x,0);tc.lineTo(x,512);tc.stroke();}
 }
 drawEarthTex();
 
 const tex=new THREE.CanvasTexture(texCanvas);
 const geo=new THREE.SphereGeometry(1,64,64);
-const mat=new THREE.MeshPhongMaterial({
-  map:tex,specular:new THREE.Color(0x224488),shininess:18,
-  emissive:new THREE.Color(0x001133),emissiveIntensity:0.15
-});
+const mat=new THREE.MeshPhongMaterial({map:tex,specular:new THREE.Color(0x224488),shininess:18,emissive:new THREE.Color(0x001133),emissiveIntensity:0.15});
 const globe=new THREE.Mesh(geo,mat);
 scene.add(globe);
-
 const atmoGeo=new THREE.SphereGeometry(1.04,32,32);
 const atmoMat=new THREE.MeshPhongMaterial({color:0x4488ff,transparent:true,opacity:0.06,side:THREE.FrontSide});
 scene.add(new THREE.Mesh(atmoGeo,atmoMat));
-
 const ambient=new THREE.AmbientLight(0x334466,0.7);scene.add(ambient);
 const sun=new THREE.DirectionalLight(0xffffff,1.1);sun.position.set(5,3,5);scene.add(sun);
 const fill=new THREE.DirectionalLight(0x223355,0.3);fill.position.set(-3,-1,-3);scene.add(fill);
 
 let spinSpeed=0,spinning=false,spinDone=null;
-
-function animate(){
-  requestAnimationFrame(animate);
-  globe.rotation.y+=spinSpeed;
-  if(spinning){
-    spinSpeed*=0.985;
-    if(spinSpeed<0.003){spinSpeed=0;spinning=false;if(spinDone){const cb=spinDone;spinDone=null;cb();}}
-  }
-  renderer.render(scene,camera);
-}
+function animate(){requestAnimationFrame(animate);globe.rotation.y+=spinSpeed;if(spinning){spinSpeed*=0.985;if(spinSpeed<0.003){spinSpeed=0;spinning=false;if(spinDone){const cb=spinDone;spinDone=null;cb();}}}renderer.render(scene,camera);}
 animate();
+function doSpin(cb){spinSpeed=0.14+Math.random()*0.06;spinning=true;spinDone=null;setTimeout(()=>{spinning=true;spinDone=cb;},1800);}
 
-function doSpin(cb){
-  spinSpeed=0.14+Math.random()*0.06;spinning=true;spinDone=null;
-  setTimeout(()=>{spinning=true;spinDone=cb;},1800);
-}
-
+// ── Game data ─────────────────────────────────────────────
 const DATA={
   countries:[
 ["Afghanistan","Kabul",3,"country"],["Albania","Tirana",4,"country"],["Algeria","Algiers",5,"country"],["Andorra","Andorra la Vella",2,"country"],["Angola","Luanda",3,"country"],["Argentina","Buenos Aires",8,"country"],["Armenia","Yerevan",3,"country"],["Australia","Canberra",9,"country"],["Austria","Vienna",8,"country"],["Azerbaijan","Baku",3,"country"],["Bahamas","Nassau",3,"country"],["Bahrain","Manama",3,"country"],["Bangladesh","Dhaka",5,"country"],["Belarus","Minsk",4,"country"],["Belgium","Brussels",8,"country"],["Belize","Belmopan",2,"country"],["Benin","Porto-Novo",2,"country"],["Bhutan","Thimphu",2,"country"],["Bolivia","Sucre",4,"country"],["Bosnia and Herzegovina","Sarajevo",3,"country"],["Botswana","Gaborone",2,"country"],["Brazil","Brasília",9,"country"],["Brunei","Bandar Seri Begawan",2,"country"],["Bulgaria","Sofia",5,"country"],["Burkina Faso","Ouagadougou",2,"country"],["Burundi","Gitega",1,"country"],["Cambodia","Phnom Penh",3,"country"],["Cameroon","Yaoundé",3,"country"],["Canada","Ottawa",9,"country"],["Cape Verde","Praia",1,"country"],["Central African Republic","Bangui",1,"country"],["Chad","N'Djamena",1,"country"],["Chile","Santiago",7,"country"],["China","Beijing",10,"country"],["Colombia","Bogotá",7,"country"],["Comoros","Moroni",1,"country"],["Congo","Brazzaville",2,"country"],["Costa Rica","San José",5,"country"],["Croatia","Zagreb",5,"country"],["Cuba","Havana",7,"country"],["Cyprus","Nicosia",4,"country"],["Czech Republic","Prague",7,"country"],["Denmark","Copenhagen",8,"country"],["Djibouti","Djibouti",1,"country"],["Dominican Republic","Santo Domingo",5,"country"],["DR Congo","Kinshasa",3,"country"],["Ecuador","Quito",6,"country"],["Egypt","Cairo",8,"country"],["El Salvador","San Salvador",4,"country"],["Equatorial Guinea","Malabo",1,"country"],["Eritrea","Asmara",1,"country"],["Estonia","Tallinn",4,"country"],["Eswatini","Mbabane",1,"country"],["Ethiopia","Addis Ababa",4,"country"],["Fiji","Suva",2,"country"],["Finland","Helsinki",7,"country"],["France","Paris",10,"country"],["Gabon","Libreville",1,"country"],["Gambia","Banjul",1,"country"],["Georgia","Tbilisi",3,"country"],["Germany","Berlin",10,"country"],["Ghana","Accra",4,"country"],["Greece","Athens",8,"country"],["Guatemala","Guatemala City",5,"country"],["Guinea","Conakry",2,"country"],["Guinea-Bissau","Bissau",1,"country"],["Guyana","Georgetown",1,"country"],["Haiti","Port-au-Prince",4,"country"],["Honduras","Tegucigalpa",3,"country"],["Hungary","Budapest",7,"country"],["Iceland","Reykjavik",6,"country"],["India","New Delhi",10,"country"],["Indonesia","Jakarta",8,"country"],["Iran","Tehran",7,"country"],["Iraq","Baghdad",7,"country"],["Ireland","Dublin",8,"country"],["Israel","Jerusalem",8,"country"],["Italy","Rome",10,"country"],["Jamaica","Kingston",6,"country"],["Japan","Tokyo",10,"country"],["Jordan","Amman",5,"country"],["Kazakhstan","Astana",4,"country"],["Kenya","Nairobi",5,"country"],["Kiribati","South Tarawa",1,"country"],["Kuwait","Kuwait City",4,"country"],["Kyrgyzstan","Bishkek",2,"country"],["Laos","Vientiane",2,"country"],["Latvia","Riga",4,"country"],["Lebanon","Beirut",6,"country"],["Lesotho","Maseru",1,"country"],["Liberia","Monrovia",2,"country"],["Libya","Tripoli",4,"country"],["Liechtenstein","Vaduz",3,"country"],["Lithuania","Vilnius",4,"country"],["Luxembourg","Luxembourg City",5,"country"],["Madagascar","Antananarivo",3,"country"],["Malawi","Lilongwe",2,"country"],["Malaysia","Kuala Lumpur",7,"country"],["Maldives","Malé",3,"country"],["Mali","Bamako",2,"country"],["Malta","Valletta",4,"country"],["Marshall Islands","Majuro",1,"country"],["Mauritania","Nouakchott",1,"country"],["Mauritius","Port Louis",2,"country"],["Mexico","Mexico City",9,"country"],["Micronesia","Palikir",1,"country"],["Moldova","Chișinău",2,"country"],["Monaco","Monaco",4,"country"],["Mongolia","Ulaanbaatar",3,"country"],["Montenegro","Podgorica",2,"country"],["Morocco","Rabat",6,"country"],["Mozambique","Maputo",2,"country"],["Myanmar","Naypyidaw",3,"country"],["Namibia","Windhoek",2,"country"],["Nauru","Yaren",1,"country"],["Nepal","Kathmandu",5,"country"],["Netherlands","Amsterdam",9,"country"],["New Zealand","Wellington",7,"country"],["Nicaragua","Managua",3,"country"],["Niger","Niamey",2,"country"],["Nigeria","Abuja",6,"country"],["North Korea","Pyongyang",6,"country"],["North Macedonia","Skopje",2,"country"],["Norway","Oslo",8,"country"],["Oman","Muscat",3,"country"],["Pakistan","Islamabad",7,"country"],["Palau","Ngerulmud",1,"country"],["Palestine","Ramallah",4,"country"],["Panama","Panama City",5,"country"],["Papua New Guinea","Port Moresby",2,"country"],["Paraguay","Asunción",3,"country"],["Peru","Lima",7,"country"],["Philippines","Manila",7,"country"],["Poland","Warsaw",8,"country"],["Portugal","Lisbon",8,"country"],["Qatar","Doha",5,"country"],["Romania","Bucharest",6,"country"],["Russia","Moscow",10,"country"],["Rwanda","Kigali",3,"country"],["Samoa","Apia",1,"country"],["San Marino","San Marino",3,"country"],["Saudi Arabia","Riyadh",7,"country"],["Senegal","Dakar",3,"country"],["Serbia","Belgrade",5,"country"],["Sierra Leone","Freetown",2,"country"],["Singapore","Singapore",7,"country"],["Slovakia","Bratislava",5,"country"],["Slovenia","Ljubljana",4,"country"],["Solomon Islands","Honiara",1,"country"],["Somalia","Mogadishu",3,"country"],["South Africa","Pretoria",7,"country"],["South Korea","Seoul",9,"country"],["South Sudan","Juba",2,"country"],["Spain","Madrid",10,"country"],["Sri Lanka","Sri Jayawardenepura Kotte",3,"country"],["Sudan","Khartoum",4,"country"],["Suriname","Paramaribo",2,"country"],["Sweden","Stockholm",8,"country"],["Switzerland","Bern",8,"country"],["Syria","Damascus",6,"country"],["Taiwan","Taipei",6,"country"],["Tajikistan","Dushanbe",2,"country"],["Tanzania","Dodoma",3,"country"],["Thailand","Bangkok",8,"country"],["Timor-Leste","Dili",1,"country"],["Togo","Lomé",1,"country"],["Tonga","Nukuʻalofa",1,"country"],["Trinidad and Tobago","Port of Spain",3,"country"],["Tunisia","Tunis",5,"country"],["Turkey","Ankara",8,"country"],["Turkmenistan","Ashgabat",2,"country"],["Tuvalu","Funafuti",1,"country"],["Uganda","Kampala",3,"country"],["Ukraine","Kyiv",7,"country"],["UAE","Abu Dhabi",7,"country"],["United Kingdom","London",10,"country"],["United States","Washington D.C.",10,"country"],["Uruguay","Montevideo",5,"country"],["Uzbekistan","Tashkent",3,"country"],["Vanuatu","Port Vila",1,"country"],["Vatican City","Vatican City",5,"country"],["Venezuela","Caracas",6,"country"],["Vietnam","Hanoi",7,"country"],["Yemen","Sanaa",4,"country"],["Zambia","Lusaka",2,"country"],["Zimbabwe","Harare",3,"country"]
@@ -222,15 +296,29 @@ function weightedPick(pool,used){
 }
 function calcPoints(w){return Math.round(5+(10-w)*5)}
 function getWrongOptions(correct,type){
-  let pool;
-  if(type==='state')pool=DATA.states.map(x=>x[1]).filter(c=>c!==correct);
-  else pool=DATA.countries.map(x=>x[1]).filter(c=>c!==correct);
+  let pool=type==='state'?DATA.states.map(x=>x[1]).filter(c=>c!==correct):DATA.countries.map(x=>x[1]).filter(c=>c!==correct);
   shuffle(pool);
   const extra=CAPITALS.filter(c=>c!==correct&&!pool.includes(c));shuffle(extra);
   return shuffle([...pool.slice(0,8),...extra.slice(0,4)]).slice(0,3);
 }
 
+// ── End messages ──────────────────────────────────────────
+const notTopMsgs = [
+  s => s < 30  ? `${s} points. Even Nauru's one government employee scored higher, and he was asleep.` : null,
+  s => s < 60  ? `${s} points. Respectable effort. Tragically, the leaderboard disagrees.` : null,
+  s => s < 90  ? `${s} points. You clearly know your Londons and Parises. The Ouagadougous, less so.` : null,
+  s => s < 120 ? `${s} points. Good game! The top 10 is ruthless — these people probably own atlases.` : null,
+  s => s >= 120? `${s} points. Genuinely impressive. The top 10 are just unreasonably good at this.` : null,
+];
+function getNotTopMsg(score){
+  for(const fn of notTopMsgs){const m=fn(score);if(m)return m;}
+  return `${score} points. Not quite top 10 — try again!`;
+}
+
+// ── Game state ────────────────────────────────────────────
 let score=0,turn=0,history=[],usedNames=new Set(),currentItem=null,answering=false;
+let playerIsTopTen=false;
+
 const scoreNumEl=document.getElementById('score-num');
 const turnNumEl=document.getElementById('turn-num');
 const turnDotsEl=document.getElementById('turn-dots');
@@ -241,6 +329,8 @@ const optionsDiv=document.getElementById('options');
 const resultMsgEl=document.getElementById('result-msg');
 const actionBtn=document.getElementById('action-btn');
 const endScreen=document.getElementById('end-screen');
+const nameEntry=document.getElementById('name-entry');
+const nameInput=document.getElementById('name-input');
 
 function initDots(){
   turnDotsEl.innerHTML='';
@@ -250,14 +340,11 @@ initDots();
 function setDot(i,st){const d=document.getElementById('dot'+i);if(d)d.className='dot '+st;}
 
 function showQuestion(item){
-  currentItem=item;
-  const pts=calcPoints(item[2]);
+  currentItem=item;const pts=calcPoints(item[2]);
   countryLabelEl.textContent=item[0];
-  pointsBadgeEl.style.display='inline-block';
-  pointsBadgeEl.textContent=pts+' pts if correct';
+  pointsBadgeEl.style.display='inline-block';pointsBadgeEl.textContent=pts+' pts if correct';
   questionTextEl.textContent='What is the capital '+(item[3]==='state'?'of the US state of':'city of')+' '+item[0]+'?';
-  const wrongs=getWrongOptions(item[1],item[3]);
-  const opts=shuffle([item[1],...wrongs]);
+  const opts=shuffle([item[1],...getWrongOptions(item[1],item[3])]);
   optionsDiv.innerHTML='';
   opts.forEach(o=>{
     const btn=document.createElement('button');btn.className='opt-btn';btn.textContent=o;
@@ -289,27 +376,89 @@ function startTurn(){
   actionBtn.style.display='none';
   countryLabelEl.textContent='';pointsBadgeEl.style.display='none';
   questionTextEl.textContent='Spinning...';optionsDiv.innerHTML='';resultMsgEl.textContent='';
-  const combined=[...DATA.countries,...DATA.states];
-  const item=weightedPick(combined,usedNames);usedNames.add(item[0]);
+  const item=weightedPick([...DATA.countries,...DATA.states],usedNames);
+  usedNames.add(item[0]);
   doSpin(()=>showQuestion(item));
 }
 
-function endGame(){
+async function endGame(){
+  document.querySelectorAll('#globe-wrap,#question-area,#options,#result-msg,#action-btn,#score-bar').forEach(el=>el.style.display='none');
   endScreen.style.display='flex';
   document.getElementById('final-score-big').textContent=score;
+
   const tbody=document.getElementById('breakdown-body');tbody.innerHTML='';
   history.forEach(h=>{
     const tr=document.createElement('tr');
     tr.innerHTML='<td>'+h.name+'</td><td>'+h.capital+'</td><td>'+h.maxPts+'</td><td class="'+(h.correct?'r-correct':'r-wrong')+'">'+(h.correct?'+'+h.pts:'✗')+'</td>';
     tbody.appendChild(tr);
   });
-  document.querySelectorAll('#globe-wrap,#question-area,#options,#result-msg,#action-btn,#score-bar').forEach(el=>el.style.display='none');
+
+  try {
+    const threshold = await getThresholdScore();
+    playerIsTopTen = score > threshold;
+  } catch(e){
+    playerIsTopTen = false;
+  }
+
+  if(playerIsTopTen){
+    document.getElementById('end-msg').textContent='You made the top 10!';
+    nameEntry.style.display='flex';
+  } else {
+    document.getElementById('end-msg').textContent=getNotTopMsg(score);
+    nameEntry.style.display='none';
+  }
+
+  await loadLeaderboard();
+}
+
+async function loadLeaderboard(){
+  const loadingEl=document.getElementById('lb-loading');
+  const tableEl=document.getElementById('leaderboard-table');
+  const tbody=document.getElementById('leaderboard-body');
+  loadingEl.style.display='block';tableEl.style.display='none';
+  try {
+    const rows=await getTopScores();
+    tbody.innerHTML='';
+    if(!rows||rows.length===0){
+      loadingEl.textContent='No scores yet — be the first!';return;
+    }
+    rows.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      const isMe=playerIsTopTen&&r.score===score&&i===rows.findIndex(x=>x.score===score);
+      if(isMe)tr.className='highlight';
+      tr.innerHTML='<td class="lb-rank">'+(i+1)+'</td><td>'+escHtml(r.name)+'</td><td class="lb-score">'+r.score+'</td>';
+      tbody.appendChild(tr);
+    });
+    loadingEl.style.display='none';tableEl.style.display='table';
+  } catch(e){
+    loadingEl.textContent='Could not load leaderboard.';
+  }
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+async function submitScore(){
+  const name=nameInput.value.trim();
+  if(!name)return;
+  document.getElementById('submit-score-btn').disabled=true;
+  document.getElementById('submit-score-btn').textContent='Saving...';
+  try {
+    await insertScore(name,score);
+    nameEntry.style.display='none';
+    await loadLeaderboard();
+  } catch(e){
+    document.getElementById('submit-score-btn').textContent='Error — try again';
+    document.getElementById('submit-score-btn').disabled=false;
+  }
 }
 
 function resetGame(){
-  score=0;turn=0;history=[];usedNames=new Set();currentItem=null;answering=false;
+  score=0;turn=0;history=[];usedNames=new Set();currentItem=null;answering=false;playerIsTopTen=false;
   scoreNumEl.textContent='0';turnNumEl.textContent='0';initDots();
-  endScreen.style.display='none';
+  endScreen.style.display='none';nameEntry.style.display='none';nameInput.value='';
+  document.getElementById('end-msg').textContent='';
+  document.getElementById('submit-score-btn').disabled=false;
+  document.getElementById('submit-score-btn').textContent='Submit score';
   document.querySelectorAll('#globe-wrap,#question-area,#options,#result-msg,#action-btn,#score-bar').forEach(el=>el.style.display='');
   optionsDiv.innerHTML='';resultMsgEl.textContent='';countryLabelEl.textContent='';
   questionTextEl.textContent='';pointsBadgeEl.style.display='none';
@@ -317,7 +466,10 @@ function resetGame(){
 }
 
 actionBtn.onclick=()=>{if(turn===0||turn<10)startTurn();else endGame();};
+document.getElementById('submit-score-btn').onclick=submitScore;
+document.getElementById('skip-btn').onclick=()=>{nameEntry.style.display='none';};
 document.getElementById('play-again').onclick=resetGame;
+nameInput.addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();});
 
 })();
 </script>
