@@ -1,30 +1,51 @@
 name: Supabase Keep-Alive
 
+# Pings the shared "Kids Games" project so the free tier doesn't auto-pause it
+# after 7 days of inactivity.
+#
+# IMPORTANT lesson (Aug 2026): the previous version wrote to a table with the
+# SERVICE ROLE key and ran green every 3 days for months — yet the project
+# still paused. Supabase does NOT appear to count service-role keepalive
+# traffic toward the activity metric. This version instead mimics a REAL user:
+# the public ANON key calling a SECURITY DEFINER RPC, the exact traffic a kid's
+# browser makes. It also fails LOUDLY (red run -> GitHub emails you) if the
+# project is ever down/paused, so it can't silently stop working again.
+
 on:
   schedule:
-    - cron: '0 8 */3 * *'   # every 3 days at 08:00 UTC
+    - cron: '0 8 */2 * *'   # every 2 days at 08:00 UTC (margin vs the 7-day limit)
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Write heartbeat to Supabase keepalive table
+      - name: Ping Supabase as a normal (anon) client
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # The anon key is public by design (it ships in every game's client JS).
+          ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbWpmd3V1Z2Rka3l6c2F6d3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODA4NTYsImV4cCI6MjA5MjM1Njg1Nn0.G1HPQabERHzyQdvX66_r8Rj71MsflfQavUE76UrBJS4"
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/keepalive?on_conflict=id" \
+          RESP=$(curl -s -w "\n%{http_code}" \
+            "$SUPABASE_URL/rest/v1/rpc/enter" \
             -X POST \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "apikey: $ANON" \
+            -H "Authorization: Bearer $ANON" \
             -H "Content-Type: application/json" \
-            -H "Prefer: resolution=merge-duplicates" \
-            -d '{"id": 1, "pinged_at": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}')
+            -H "Content-Profile: arcade" \
+            -d '{"p_name": "__keepalive__", "p_pin": "0000", "p_create": false}')
+          CODE=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | head -n -1)
+          echo "HTTP $CODE | body: $BODY"
 
-          echo "HTTP status: $HTTP_STATUS"
-
-          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "201" ]; then
-            echo "::error::Supabase heartbeat write failed with status $HTTP_STATUS"
+          # A live project returns 200 with {"ok":false,...} (a harmless no-op
+          # login miss). A paused project returns 5xx / a Cloudflare HTML page.
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Kids Games Supabase looks DOWN or PAUSED (HTTP $CODE). Unpause it in the dashboard."
             exit 1
           fi
-
-          echo "Supabase keepalive heartbeat written successfully"
+          if ! echo "$BODY" | grep -q '"ok"'; then
+            echo "::error::Unexpected response from Supabase — the project may be paused or broken."
+            exit 1
+          fi
+          echo "Keepalive OK — project is awake and answering real (anon) requests."
