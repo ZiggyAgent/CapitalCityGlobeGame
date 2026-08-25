@@ -1,51 +1,43 @@
 name: Supabase Keep-Alive
 
-# Pings the shared "Kids Games" project so the free tier doesn't auto-pause it
-# after 7 days of inactivity.
+# Keeps the Kids Games Supabase project active so the free tier doesn't auto-pause it.
 #
-# IMPORTANT lesson (Aug 2026): the previous version wrote to a table with the
-# SERVICE ROLE key and ran green every 3 days for months — yet the project
-# still paused. Supabase does NOT appear to count service-role keepalive
-# traffic toward the activity metric. This version instead mimics a REAL user:
-# the public ANON key calling a SECURITY DEFINER RPC, the exact traffic a kid's
-# browser makes. It also fails LOUDLY (red run -> GitHub emails you) if the
-# project is ever down/paused, so it can't silently stop working again.
+# Supabase's actual bar (official docs): "a few user requests to the database
+# each day over the previous week." So the ONLY thing that matters is frequent,
+# DAILY activity — an every-2-3-day ping was always too sparse and the project
+# paused despite green runs. This runs every 6 hours and makes a few real ANON
+# requests each time (~12 DB requests/day, every day), and fails loud only if a
+# whole run can't reach the project (i.e. it's down/paused).
 
 on:
   schedule:
-    - cron: '0 8 */2 * *'   # every 2 days at 08:00 UTC (margin vs the 7-day limit)
+    - cron: '7 */6 * * *'   # every 6 hours (~4x/day x 3 pings = a dozen/day)
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase as a normal (anon) client
+      - name: Ping Supabase as a normal (anon) client, a few times
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # The anon key is public by design (it ships in every game's client JS).
-          ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbWpmd3V1Z2Rka3l6c2F6d3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODA4NTYsImV4cCI6MjA5MjM1Njg1Nn0.G1HPQabERHzyQdvX66_r8Rj71MsflfQavUE76UrBJS4"
+          ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbWpmd3V1Z2Rka3l6c2F6d3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODA4NTYsImV4cCI6MjA5MjM1Njg1Nn0.G1HPQabERHzyQdvX66_r8Rj71MsflfQavUE76UrBJS4"   # public anon key (ships in the app client)
         run: |
-          RESP=$(curl -s -w "\n%{http_code}" \
-            "$SUPABASE_URL/rest/v1/rpc/enter" \
-            -X POST \
-            -H "apikey: $ANON" \
-            -H "Authorization: Bearer $ANON" \
-            -H "Content-Type: application/json" \
-            -H "Content-Profile: arcade" \
-            -d '{"p_name": "__keepalive__", "p_pin": "0000", "p_create": false}')
-          CODE=$(echo "$RESP" | tail -1)
-          BODY=$(echo "$RESP" | head -n -1)
-          echo "HTTP $CODE | body: $BODY"
-
-          # A live project returns 200 with {"ok":false,...} (a harmless no-op
-          # login miss). A paused project returns 5xx / a Cloudflare HTML page.
-          if [ "$CODE" != "200" ]; then
-            echo "::error::Kids Games Supabase looks DOWN or PAUSED (HTTP $CODE). Unpause it in the dashboard."
+          ok=0
+          for i in 1 2 3; do
+            RESP=$(curl -s -w "\n%{http_code}" \
+              "$SUPABASE_URL/rest/v1/rpc/enter" \
+              -X POST \
+              -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+              -H "Content-Type: application/json" -H "Content-Profile: arcade" \
+              -d '{"p_name": "__keepalive__", "p_pin": "0000", "p_create": false}')
+            CODE=$(echo "$RESP" | tail -1); RESPBODY=$(echo "$RESP" | head -n -1)
+            echo "ping $i: HTTP $CODE | $RESPBODY"
+            if [ "$CODE" = "200" ] && echo "$RESPBODY" | grep -q '"ok"'; then ok=$((ok+1)); fi
+            sleep 5
+          done
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::All keepalive pings failed — Kids Games Supabase may be DOWN or PAUSED. Unpause it in the dashboard."
             exit 1
           fi
-          if ! echo "$BODY" | grep -q '"ok"'; then
-            echo "::error::Unexpected response from Supabase — the project may be paused or broken."
-            exit 1
-          fi
-          echo "Keepalive OK — project is awake and answering real (anon) requests."
+          echo "$ok/3 pings OK — project is awake."
