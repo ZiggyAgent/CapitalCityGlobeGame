@@ -8,16 +8,27 @@ name: Supabase Keep-Alive
 # paused despite green runs. This runs every 6 hours and makes a few real ANON
 # requests each time (~12 DB requests/day, every day), and fails loud only if a
 # whole run can't reach the project (i.e. it's down/paused).
+#
+# SECOND failure mode (this caused the Oct 2026 pause): GitHub auto-DISABLES a
+# public repo's scheduled workflow after 60 days with no repository activity
+# (pushes). This repo stopped getting pushes, so the cron was disabled on day
+# 60 and the project paused a week later. The final step commits a heartbeat
+# file every run, so the repo is never idle and the cron is never disabled.
 
 on:
   schedule:
     - cron: '7 */6 * * *'   # every 6 hours (~4x/day x 3 pings = a dozen/day)
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Ping Supabase as a normal (anon) client, a few times
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -41,3 +52,12 @@ jobs:
             exit 1
           fi
           echo "$ok/3 pings OK — project is awake."
+
+      - name: Commit repo heartbeat (keeps GitHub from disabling this cron after 60 idle days)
+        run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .keepalive-heartbeat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .keepalive-heartbeat
+          git commit -m "chore: keepalive heartbeat [skip ci]" || { echo "nothing to commit"; exit 0; }
+          git push
