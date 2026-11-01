@@ -1,0 +1,79 @@
+name: Kids Games Watchdog
+
+# Early warning for the shared "Kids Games" Supabase project. The keepalive
+# fails loud only when a run EXECUTES and can't reach the project — it can't
+# warn you if runs stop happening at all (the exact failure of Oct 2026). This
+# watchdog closes that gap: once a day it checks that the keepalive's heartbeat
+# is FRESH and the project answers, and FAILS LOUD (red run -> GitHub emails the
+# repo owner) if either is wrong — days before a 7-day inactivity pause.
+#
+# It commits its OWN heartbeat first, so this watchdog's cron stays alive even
+# if the keepalive dies (the thing it's watching for). Pure shell + curl: no AI,
+# no tokens, no secrets (public anon key + public heartbeat file only).
+
+on:
+  schedule:
+    - cron: '41 8 * * *'   # once a day, 08:41 UTC (distinct from the keepalive)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Self-heartbeat first (keeps THIS watchdog's cron alive no matter what)
+        run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .watchdog-heartbeat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .watchdog-heartbeat
+          git commit -m "chore: watchdog heartbeat [skip ci]" || exit 0
+          for i in 1 2 3; do
+            git push && break
+            echo "push race, retrying…"; git pull --rebase -q; sleep 3
+          done
+
+      - name: Check keepalive freshness + project reachability
+        env:
+          SUPA_URL: "https://jdmjfwuugddkyzsazwzg.supabase.co"
+          ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbWpmd3V1Z2Rka3l6c2F6d3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODA4NTYsImV4cCI6MjA5MjM1Njg1Nn0.G1HPQabERHzyQdvX66_r8Rj71MsflfQavUE76UrBJS4"
+          HEARTBEAT_URL: "https://raw.githubusercontent.com/ZiggyAgent/CapitalCityGlobeGame/main/.keepalive-heartbeat"
+          MAX_AGE_HOURS: "24"   # keepalive runs every 6h; 24h = ~4 missed runs
+        run: |
+          fail=0
+
+          # 1. Is the keepalive still producing fresh heartbeats?
+          HB=$(curl -fsSL "$HEARTBEAT_URL?t=$(date +%s)" | tr -d '[:space:]' || echo "")
+          if [ -z "$HB" ]; then
+            echo "::error::Could not read the keepalive heartbeat file — the keepalive may be broken."
+            fail=1
+          else
+            AGE=$(python3 -c "import sys,datetime;t=datetime.datetime.fromisoformat(sys.argv[1].replace('Z','+00:00'));print(int((datetime.datetime.now(datetime.timezone.utc)-t).total_seconds()//3600))" "$HB")
+            echo "Keepalive heartbeat: $HB  (${AGE}h ago)"
+            if [ "$AGE" -gt "$MAX_AGE_HOURS" ]; then
+              echo "::error::Keepalive heartbeat is ${AGE}h old (> ${MAX_AGE_HOURS}h). The keepalive cron has likely STOPPED — the project will pause soon. Check CapitalCityGlobeGame Actions (re-enable if disabled)."
+              fail=1
+            fi
+          fi
+
+          # 2. Does the project answer a normal anon request right now?
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPA_URL/rest/v1/rpc/enter" -X POST \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" -H "Content-Profile: arcade" \
+            -d '{"p_name":"__watchdog__","p_pin":"0000","p_create":false}')
+          echo "Project anon ping: HTTP $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Kids Games project not responding (HTTP $CODE) — likely PAUSED or down. Restore it via dashboard or Management API."
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "WATCHDOG TRIPPED — see errors above."
+            exit 1
+          fi
+          echo "Watchdog OK: keepalive heartbeat is fresh and the project is awake."
